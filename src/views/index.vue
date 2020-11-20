@@ -98,36 +98,41 @@
       format="兑换倒计时 HH 时 mm 分 ss 秒"
     />
 
-    <van-list
-      class="index-list"
-      v-model="loading"
-      :finished="finished"
-      :offset="300"
-      :loading-text="`加载中...`"
-      @load="onload"
-    >
-      <div>
-        <div
-          class="list_item"
-          v-for="(item, index) in listData"
-          :key="index"
-          @click="$router.push('/detail')"
-        >
-          <van-image :src="item.img" lazy-load></van-image>
-          <div class="list_item_text_ctt">
-            <div class="list_item_p1">{{ item.title }}</div>
-            <div class="list_item_p2">
-              <span class="point">{{ item.point }}</span>
-              <span class="orginal-price">{{ item.oPoint }}</span>
-            </div>
-            <div class="list_item_p3">
-              <div class="sale-desc">{{ item.sale }}</div>
-              <div class="price">{{ item.price }}</div>
+    <van-pull-refresh v-model="refreshing" @refresh="handleRefresh">
+      <van-list
+        class="index-list"
+        v-model="loading"
+        :finished="finished"
+        :offset="10"
+        :loading-text="`加载中...`"
+        @load="onload"
+      >
+        <div>
+          <div
+            class="list_item"
+            v-for="(item, index) in listData"
+            :key="index"
+            @click="handlePushDetail(item.id)"
+          >
+            <van-image
+              :src="item.img"
+              lazy-load
+            ></van-image>
+            <div class="list_item_text_ctt">
+              <div class="list_item_p1">{{ item.name }}</div>
+              <div class="list_item_p2">
+                <span class="point">{{ item.integral }}</span>
+                <span class="orginal-price">{{ item.discount }}</span>
+              </div>
+              <div class="list_item_p3">
+                <div class="sale-desc">兑换热度5.2万+</div>
+                <div class="price">{{ item.price }}</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </van-list>
+      </van-list>
+    </van-pull-refresh>
 
     <van-tabbar v-model="tabBarActive">
       <van-tabbar-item
@@ -142,6 +147,8 @@
 </template>
 
 <script>
+import { getList } from "@/api/goods";
+
 export default {
   data() {
     return {
@@ -166,6 +173,9 @@ export default {
       ],
       time: 2 * 60 * 60 * 1000,
       sign: false,
+      current: 1,
+      pageSize: 10,
+      refreshing: false,
       loading: false,
       finished: false,
       signData: [
@@ -228,51 +238,27 @@ export default {
           label: "吃货必看",
         },
       ],
-      listData: [
-        {
-          img: "https://img.jingdongyouxuan.com/841258984013824",
-          title: "六针水钻石英皮腕表",
-          point: "999积分",
-          oPoint: "+299元",
-          sale: "兑换热度3.2万+",
-          price: "￥3688",
-        },
-        {
-          img: "https://img.jingdongyouxuan.com/841258984013824",
-          title: "六针水钻石英皮腕表",
-          point: "999积分",
-          oPoint: "+299元",
-          sale: "兑换热度3.2万+",
-          price: "￥3688",
-        },
-        {
-          img: "https://img.jingdongyouxuan.com/841258984013824",
-          title: "六针水钻石英皮腕表",
-          point: "999积分",
-          oPoint: "+299元",
-          sale: "兑换热度3.2万+",
-          price: "￥3688",
-        },
-      ],
+      listData: [],
     };
   },
   methods: {
     onload() {
-      if (this.listData.length <= 100) {
-        this.axios
-          .get("/mock/goods")
-          .then((response) => {
-            this.listData = [...this.listData, ...response.data];
-            this.loading = false;
-          })
-          .catch((e) => {
-            this.loading = false;
+      getList({ current: this.current, pageSize: this.pageSize })
+        .then((response) => {
+          const { current, pageSize, total, data } = response;
+          this.listData = [...this.listData, ...data];
+          this.loading = false;
+
+          if (Number(current) * Number(pageSize) >= Number(total)) {
             this.finished = true;
-          });
-      } else {
-        this.loading = false;
-        this.finished = true;
-      }
+          } else {
+            this.current += this.current + 1;
+          }
+        })
+        .catch((e) => {
+          this.loading = false;
+          this.finished = true;
+        });
     },
     tabClick(index) {
       this.$refs.wrap.scrollTop = 300;
@@ -283,6 +269,19 @@ export default {
 
       this.onload();
     },
+    handleRefresh() {
+      this.finished = true;
+      this.loading = true;
+      this.onload();
+    },
+    handlePushDetail(id) {
+      this.$router.push({
+        path: `/${id}/detail`,
+        params: {
+          id: id
+        }
+      })
+    }
   },
 };
 </script>

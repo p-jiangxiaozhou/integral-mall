@@ -8,6 +8,14 @@ export const mainRouter = [
     {
         path: '/',
         component: () => import('@/views/index')
+    },
+    {
+        path: '/:id/detail',
+        component: () => import('@/views/detail')
+    },
+    {
+        path: '/pay',
+        component: () => import('@/views/pay')
     }
 ]
 
