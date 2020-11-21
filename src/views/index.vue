@@ -83,7 +83,7 @@
           v-for="(item, index) in tabsData"
           :key="index"
           :class="{ active: index === tabActive }"
-          @click="tabClick(index)"
+          @click="tabClick(index, item.key)"
         >
           <div>{{ item.text }}</div>
           <div class="tab-sub-text">{{ item.label }}</div>
@@ -114,10 +114,7 @@
             :key="index"
             @click="handlePushDetail(item.id)"
           >
-            <van-image
-              :src="item.img"
-              lazy-load
-            ></van-image>
+            <van-image :src="item.img" lazy-load></van-image>
             <div class="list_item_text_ctt">
               <div class="list_item_p1">{{ item.name }}</div>
               <div class="list_item_p2">
@@ -148,6 +145,7 @@
 
 <script>
 import { getList } from "@/api/goods";
+import { getList as categoryGetList } from "@/api/category";
 
 export default {
   data() {
@@ -218,32 +216,23 @@ export default {
       tabActive: 0,
       tabsData: [
         {
+          key: null,
           text: "推荐",
           label: "超级优选",
-        },
-        {
-          text: "美妆",
-          label: "焕颜新生",
-        },
-        {
-          text: "电器",
-          label: "智能生活",
-        },
-        {
-          text: "居家",
-          label: "温暖的家",
-        },
-        {
-          text: "美食",
-          label: "吃货必看",
         },
       ],
       listData: [],
     };
   },
+  created: function () {
+    this.onLoadCategory();
+  },
   methods: {
     onload() {
-      getList({ current: this.current, pageSize: this.pageSize })
+      this.loadGoodsList(this.current, this.pageSize);
+    },
+    loadGoodsList(current, pageSize, categoryId) {
+      getList({ current, pageSize, categoryId })
         .then((response) => {
           const { current, pageSize, total, data } = response;
           this.listData = [...this.listData, ...data];
@@ -260,14 +249,31 @@ export default {
           this.finished = true;
         });
     },
-    tabClick(index) {
+    onLoadCategory() {
+      categoryGetList().then((response) => {
+        const { data } = response;
+        let list = [];
+        for (let i = 0; i < data.length; i++) {
+          let item = data[i];
+          list.push({
+            key: item.id,
+            text: item.name,
+            label: item.subTitle,
+          });
+        }
+        this.tabsData = [...this.tabsData, ...list];
+      });
+    },
+    tabClick(index, key) {
       this.$refs.wrap.scrollTop = 300;
       this.tabActive = index;
       this.listData = [];
       this.loading = true;
       this.finished = false;
 
-      this.onload();
+      this.current = 1;
+
+      this.loadGoodsList(this.current, this.pageSize, key);
     },
     handleRefresh() {
       this.finished = true;
@@ -278,10 +284,10 @@ export default {
       this.$router.push({
         path: `/${id}/detail`,
         params: {
-          id: id
-        }
-      })
-    }
+          id: id,
+        },
+      });
+    },
   },
 };
 </script>

@@ -205,6 +205,7 @@
 </template>
 <script>
 import areaList from "./area.js";
+import { getDetail } from "@/api/goods";
 export default {
   data() {
     return {
